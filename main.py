@@ -7,6 +7,7 @@ import random
 import os
 from geopy import geocoders
 from dotenv import load_dotenv
+import markups as m
 load_dotenv()
 
 # TOKENS
@@ -37,7 +38,6 @@ def code_location(latitude: str, longitude: str, token_accu: str):
     data = json.loads(response.text)
     if data['Code'] == 'ServiceUnavailable':
         code = data['Code']
-        print(code)
         return code
     else:
         code = data['Key']
@@ -86,7 +86,6 @@ def get_weather(message, city):
     latitude, longitude = geo_pos(city)
     code = code_location(latitude, longitude, token_accu)
     if code != 'ServiceUnavailable':
-        print("falseeeeee")
         accu_weather = waetherACCU(code, token_accu)
         accu_message(accu_weather, message)
     owm_weather = weatherOWM(city)
@@ -96,8 +95,9 @@ def get_weather(message, city):
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.reply_to(message, f'Я погодабот, приятно познакомитсья, {message.from_user.first_name}.'
-                        f'Чтобы узнать погоду в своём городе напиши его название.'
-                        f'Все мои возможность можно узнать спросив у меня командой /help')
+        f'Чтобы узнать погоду в своём городе напиши его название.'
+        f'Все мои возможность можно узнать спросив у меня командой /help',
+        reply_markup=m.source_markup)
 @bot.message_handler(commands=['help'])
 def send_help(message):
     bot.reply_to(message,
@@ -106,7 +106,13 @@ def send_help(message):
 # Отправка сообщений о погоде
 @bot.message_handler(content_types=['text'])
 def send_answer(message):
-    if message.text.lower() == 'привет' or message.text.lower() == 'здарова':
+    if message.text.lower() == 'подсказка':
+        bot.reply_to(message,
+            f'Я могу показать тебе погоду в любом городе, для этого напиши мне его название. \n'
+            f'Пока это всё что я умею.... Но я буду учиться, и потом покажу тебе что я могу')
+    elif message.text.lower() == 'скажи погоду':
+        bot.reply_to(message, f'Если хочешь узнать погоду напиши название города.')
+    elif message.text.lower() == 'привет' or message.text.lower() == 'здарова':
         bot.send_message(message.from_user.id,
             f'Привет {message.from_user.first_name}, я уже говорил что умею только показывать погоду? Да вот такой вот я бот =)\n'
             f'Напиши мне название своего города')
@@ -118,6 +124,8 @@ def send_answer(message):
         except AttributeError as err:
             bot.send_message(message.from_user.id,
                 f'{message.from_user.first_name} я не нашел такого города,'
-                f' и получил ошибку, попробуй другой город')
+                f' и получил ошибку, попробуй другой город. \n'
+                f'А пока пишешь посмотри какая погода у других =)')
+            get_weather(message, random.choice(cityList))
 
 bot.polling(none_stop=True)
